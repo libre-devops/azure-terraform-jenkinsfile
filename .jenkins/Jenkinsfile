@@ -3,19 +3,21 @@ pipeline {
 
     parameters {
         string(name: 'environment', defaultValue: 'default', description: 'Workspace/environment file to use for deployment')
-        string(name: 'terraform_version', defaultValue: 'latest', description: 'Version of Terraform to be used')
+
         string(name: 'version', defaultValue: '', description: 'Version variable to pass to Terraform')
         booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
+
         string(name: 'terraform_working_directory', defaultValue: 'terraform', description: 'The name of the state file blob')
+        string(name: 'terraform_version', defaultValue: 'latest', description: 'Version of Terraform to be used')
+        string(name: 'terraform_state_name', defaultValue: '${short}-${env}.terraform.tfstate', description: 'The name of the state file blob')
+        string(name: 'terraform_compliance_path', defaultValue: 'git:https://github.com/craigthackerx/azure-terraform-compliance-naming-convention.git//?ref=main', description: 'The path to the terraform-compliance files')
+        string(name: 'checkov_skipped_test', defaultValue: 'CKV_AZURE_116,CKV_AZURE_117,CKV_AZURE_137,CKV_AZURE_138,CKV_AZURE_139,CKV_AZURE_141,CKV_AZURE_145,CKV_AZURE_151,CKV_AZURE_33,CKV_AZURE_34,CKV_AZURE_35,CKV_AZURE_4,CKV_AZURE_44,CKV_AZURE_50,CKV_AZURE_7,CKV_AZURE_98,CKV2_AZURE_1,CKV2_AZURE_18,CKV2_AZURE_21,CKV2_AZURE_8', description: 'If you need to skip checkov tests, put them here')
 
         string(name: 'short', defaultValue: 'lbdo', description: 'The shorthand project name')
         string(name: 'env', defaultValue: 'dev', description: 'The shorthand stage for the project, for example, dev, tst, prd')
         string(name: 'loc', defaultValue: 'euw', description: 'The shorthand name for the location in Azure, for example, uks, ukw, euw')
 
-        string(name: 'terraform_state_name', defaultValue: '${short}-${env}.terraform.tfstate', description: 'The name of the state file blob')
-
-        string(name: 'terraform_compliance_path', defaultValue: 'git:https://github.com/craigthackerx/azure-terraform-compliance-naming-convention.git//?ref=main', description: 'The path to the terraform-compliance files')
-        string(name: 'checkov_skipped_test', defaultValue: 'CKV_AZURE_116,CKV_AZURE_117,CKV_AZURE_137,CKV_AZURE_138,CKV_AZURE_139,CKV_AZURE_141,CKV_AZURE_145,CKV_AZURE_151,CKV_AZURE_33,CKV_AZURE_34,CKV_AZURE_35,CKV_AZURE_4,CKV_AZURE_44,CKV_AZURE_50,CKV_AZURE_7,CKV_AZURE_98,CKV2_AZURE_1,CKV2_AZURE_18,CKV2_AZURE_21,CKV2_AZURE_8', description: 'If you need to skip checkov tests, put them here')
+        string(name: 'git_source_files', defaultValue: 'https://github.com/libre-devops/azure-terraform-jenkinsfile', description: 'The path to the terraform-compliance files')
     }
 
     environment {
@@ -30,32 +32,40 @@ pipeline {
 
     stages {
         stage('Plan') {
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: 'refs/heads/main']],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'CalibrationResults']],
+            submoduleCfg: [],
+            userRemoteConfigs: [[url: '${params.git_source_files}']]
+        ])
             steps {
                 script {
                     currentBuild.displayName = params.version
                 }
                 pwsh '''
                 Write-Host $Env:short
-                Write-Host ${params.env}
-                Write-Host ${params.loc}
+                Write-Host $Env:env
+                Write-Host $Env:loc
 
-                cd ${terraform_working_directory} ; `
+                cd $Env:terraform_working_directory ; `
 
                 pwd
 
-                tfenv install ${terraform_version} && tfenv use ${terraform_version}
+                tfenv install $Env:terraform_version && tfenv use $Env:terraform_version
                 New-Item -Path . -Name .terraform -ItemType "Directory" -Force ; `
 
                 terraform init `
-                -backend-config="storage_account_name=${terraform_storage_account_name}" `
-                -backend-config="container_name=${terraform_blob_container_name}" `
-                -backend-config="access_key=${terraform_storage_key}" `
-                -backend-config="key=${terraform_state_name}" ; `
+                -backend-config="storage_account_name=$Env:terraform_storage_account_name" `
+                -backend-config="container_name=$Env:terraform_blob_container_name" `
+                -backend-config="access_key=$Env:terraform_storage_key" `
+                -backend-config="key=$Env:terraform_state_name" ; `
 
-                Write-Output "${params.env}" > .terraform/environment ; `
+                Write-Output "$Env:env" > .terraform/environment ; `
 
-                terraform workspace new "${params.env}" ; `
-                terraform workspace select "${params.env}" ; `
+                terraform workspace new "$Env:env" ; `
+                terraform workspace select "$Env:env" ; `
                 terraform validate ; `
 
                 terraform plan -out pipeline.plan
@@ -69,11 +79,11 @@ pipeline {
                     currentBuild.displayName = params.version
                 }
                 pwsh '''
-                cd ${terraform_working_directory} ; `
+                cd $Env:terraform_working_directory ; `
 
                 pip3 install terraform-compliance ; `
 
-                terraform-compliance -p pipeline.plan -f ${terraform_compliance_path}
+                terraform-compliance -p pipeline.plan -f $Env:terraform_compliance_path
                 '''
             }
         }
@@ -84,7 +94,7 @@ pipeline {
                     currentBuild.displayName = params.version
                 }
                 pwsh '''
-                cd ${terraform_working_directory} ; `
+                cd $Env:terraform_working_directory ; `
 
                 if ($IsLinux)
                 {
@@ -110,13 +120,13 @@ pipeline {
                     currentBuild.displayName = params.version
                 }
                 pwsh '''
-                cd ${terraform_working_directory} ; `
+                cd $Env:terraform_working_directory ; `
 
                 pip3 install checkov ; `
 
                 terraform show -json pipeline.plan > pipeline.plan.json ; `
 
-                checkov -f pipeline.plan.json --skip-check ${checkov_skipped_test}
+                checkov -f pipeline.plan.json --skip-check $Env:checkov_skipped_test
                 '''
             }
         }
@@ -140,21 +150,21 @@ pipeline {
         stage('Apply') {
             steps {
                 pwsh '''
-                cd ${terraform_working_directory} ; `
+                cd $Env:terraform_working_directory ; `
 
-                tfenv install ${terraform_version} && tfenv use ${terraform_version}
+                tfenv install $Env:terraform_version && tfenv use $Env:terraform_version
                 New-Item -Path . -Name .terraform -ItemType "Directory" -Force ; `
 
                 terraform init `
-                -backend-config="storage_account_name=${terraform_storage_account_name}" `
-                -backend-config="container_name=${terraform_blob_container_name}" `
-                -backend-config="access_key=${terraform_storage_key}" `
-                -backend-config="key=${terraform_state_name}" ; `
+                -backend-config="storage_account_name=$Env:terraform_storage_account_name" `
+                -backend-config="container_name=$Env:terraform_blob_container_name" `
+                -backend-config="access_key=$Env:terraform_storage_key" `
+                -backend-config="key=$Env:terraform_state_name" ; `
 
-                Write-Output "${params.env}" > .terraform/environment ; `
+                Write-Output "$Env:env" > .terraform/environment ; `
 
-                terraform workspace new "${params.env}" ; `
-                terraform workspace select "${params.env}" ; `
+                terraform workspace new "$Env:env" ; `
+                terraform workspace select "$Env:env" ; `
                 terraform validate ; `
 
                 terraform plan -out pipeline.plan
