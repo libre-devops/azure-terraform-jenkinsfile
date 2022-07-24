@@ -3,6 +3,8 @@ services:
 
   tf-gh-action:
     build: .
-    image: "ghcr.io/libre-devops/azure-terraform-jenkinsfile:latest"
+    image: "ghcr.io/libre-devops/azure-terraform-jenkinsfile-base:latest"
     container_name: "tf-jenkins"
     restart: unless-stopped
+    ports:
+      - 8080:8080

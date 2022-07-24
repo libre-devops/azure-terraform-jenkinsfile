@@ -8,12 +8,9 @@ pipeline {
         booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
 
         string(name: 'short', defaultValue: 'lbdo', description: 'The shorthand project name')
-        string(name: 'env', defaultValue: 'tst', description: 'The shorthand stage for the project, for example, dev, tst, prd')
-        string(name: 'loc', defaultValue: 'uks', description: 'The shorthand name for the location in Azure, for example, uks, ukw, euw')
-        
-        string(name: 'terraform_storage_account_name', defaultValue: 'credentials('TERRAFORM_STORAGE_ACCOUNT_NAME')', description: 'The name of the storage account hosting the state file')
-        string(name: 'terraform_blob_container_name', defaultValue: 'credentials('TERRAFORM_BLOB_CONTAINER_NAME')', description: 'The name of the blob hosting the state file')
-        string(name: 'terraform_storage_key', defaultValue: 'credentials('TERRAFORM_STORAGE_KEY')', description: 'The access key needed to access the storage account')
+        string(name: 'env', defaultValue: 'dev', description: 'The shorthand stage for the project, for example, dev, tst, prd')
+        string(name: 'loc', defaultValue: 'euw', description: 'The shorthand name for the location in Azure, for example, uks, ukw, euw')
+
         string(name: 'terraform_state_name', defaultValue: '${short}-${env}.terraform.tfstate', description: 'The name of the state file blob')
 
         string(name: 'terraform_compliance_path', defaultValue: 'git:https://github.com/craigthackerx/azure-terraform-compliance-naming-convention.git//?ref=main', description: 'The path to the terraform-compliance files')
@@ -21,10 +18,13 @@ pipeline {
     }
 
     environment {
-        ARM_CLIENT_ID        = credentials('ARM_CLIENT_ID')
-        ARM_CLIENT_SECRET    = credentials('ARM_CLIENT_SECRET')
-        ARM_TENANT_ID        = credentials('ARM_TENANT_ID')
-        ARM_SUBSCRIPTION_ID  = credentials('ARM_SUBSCRIPTION_ID')
+        ARM_CLIENT_ID                   = credentials('ARM_CLIENT_ID')
+        ARM_CLIENT_SECRET               = credentials('ARM_CLIENT_SECRET')
+        ARM_TENANT_ID                   = credentials('ARM_TENANT_ID')
+        ARM_SUBSCRIPTION_ID             = credentials('ARM_SUBSCRIPTION_ID')
+        TERRAFORM_STORAGE_ACCOUNT_NAME  = credentials('TERRAFORM_STORAGE_ACCOUNT_NAME')
+        TERRAFORM_BLOB_CONTAINER_NAME   = credentials('TERRAFORM_BLOB_CONTAINER_NAME')
+        TERRAFORM_STORAGE_KEY           = credentials ('TERRAFORM_STORAGE_KEY')
     }
 
     stages {
@@ -38,10 +38,10 @@ pipeline {
                 New-Item -Path . -Name .terraform -ItemType "Directory" -Force ; `
 
                 terraform init `
-                -backend-config="storage_account_name=${params.terraform_storage_account_name}" `
-                -backend-config="container_name=${params.terraform_blob_container_name}" `
-                -backend-config="access_key=${params.terraform_storage_key}" `
-                -backend-config="key=${params.terraform_state_name}" ; `
+                -backend-config="storage_account_name=${terraform_storage_account_name}" `
+                -backend-config="container_name=${terraform_blob_container_name}" `
+                -backend-config="access_key=${terraform_storage_key}" `
+                -backend-config="key=${terraform_state_name}" ; `
 
                 Write-Output "${params.env}" > .terraform/environment ; `
 
@@ -125,7 +125,24 @@ pipeline {
         stage('Apply') {
             steps {
                 pwsh '''
-                terraform apply -input=false pipeline.plan
+                tfenv install ${terraform_version} && tfenv use ${terraform_version}
+                New-Item -Path . -Name .terraform -ItemType "Directory" -Force ; `
+
+                terraform init `
+                -backend-config="storage_account_name=${terraform_storage_account_name}" `
+                -backend-config="container_name=${terraform_blob_container_name}" `
+                -backend-config="access_key=${terraform_storage_key}" `
+                -backend-config="key=${terraform_state_name}" ; `
+
+                Write-Output "${params.env}" > .terraform/environment ; `
+
+                terraform workspace new "${params.env}" ; `
+                terraform workspace select "${params.env}" ; `
+                terraform validate ; `
+
+                terraform plan -out pipeline.plan
+
+                terraform apply pipeline.plan
                 '''
             }
         }

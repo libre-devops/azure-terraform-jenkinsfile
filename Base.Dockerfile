@@ -32,7 +32,6 @@ RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y \
     apt-get update && \
     apt-get install -y powershell
 
-
 #Set User Path with expected paths for new packages
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/usr/local/go:/usr/local/go/dev/bin:/usr/local/bin/python3:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.local/bin:/var/jenkins_home:${PATH}"
 RUN echo $PATH | tee /etc/environment
