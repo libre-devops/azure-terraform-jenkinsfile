@@ -33,14 +33,6 @@ pipeline {
     stages {
         stage('Plan') {
             steps {
-            checkout([
-            $class: 'GitSCM',
-            branches: [[name: 'refs/heads/main']],
-            doGenerateSubmoduleConfigurations: false,
-            extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'CalibrationResults']],
-            submoduleCfg: [],
-            userRemoteConfigs: [[url: '${params.git_source_files}']]
-            ])
                 script {
                     currentBuild.displayName = params.version
                 }
