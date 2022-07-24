@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:latest
+FROM jenkins/jenkins:lts
 
 ENV NORMAL_USER jenkins
 
@@ -47,8 +47,8 @@ RUN brew install tfsec python3 tfenv tree
 RUN pip3 install terraform-compliance checkov azure-cli && \
     tfenv install latest
 
-RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
+RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
 
 USER ${NORMAL_USER}
 
-RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
+RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
