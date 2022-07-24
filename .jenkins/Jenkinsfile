@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    options {
-        ansiColor('xterm')
-    }
-
     parameters {
         string(name: 'environment', defaultValue: 'default', description: 'Workspace/environment file to use for deployment')
         string(name: 'terraform_version', defaultValue: 'latest', description: 'Version of Terraform to be used')
