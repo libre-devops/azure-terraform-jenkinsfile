@@ -52,4 +52,4 @@ RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
 
 USER ${NORMAL_USER}
 
-RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
+RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
