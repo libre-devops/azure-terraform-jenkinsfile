@@ -26,7 +26,12 @@ RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y \
                 useradd -m -s /bin/bash linuxbrew && \
                 usermod -aG sudo linuxbrew &&  \
                 mkdir -p /home/linuxbrew/.linuxbrew && \
-                chown -R linuxbrew: /home/linuxbrew/.linuxbrew
+                chown -R linuxbrew: /home/linuxbrew/.linuxbrew && \
+    wget -q https://packages.microsoft.com/config/debian/$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')/packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    apt-get update && \
+    apt-get install -y powershell
+
 
 #Set User Path with expected paths for new packages
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/usr/local/go:/usr/local/go/dev/bin:/usr/local/bin/python3:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.local/bin:/var/jenkins_home:${PATH}"
@@ -43,4 +48,8 @@ RUN brew install tfsec python3 tfenv tree
 RUN pip3 install terraform-compliance checkov azure-cli && \
     tfenv install latest
 
+RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
+
 USER ${NORMAL_USER}
+
+RUN echo 'alias powershell="pwsh"' >> ~/.bashrc  && source ~/.bashrc
