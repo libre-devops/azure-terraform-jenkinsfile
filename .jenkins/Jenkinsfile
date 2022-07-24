@@ -35,12 +35,13 @@ pipeline {
                     currentBuild.displayName = params.version
                 }
                 pwsh '''
-                Write-Host ${params.short}
+                Write-Host $Env:short
                 Write-Host ${params.env}
                 Write-Host ${params.loc}
-                pwd
 
                 cd ${terraform_working_directory} ; `
+
+                pwd
 
                 tfenv install ${terraform_version} && tfenv use ${terraform_version}
                 New-Item -Path . -Name .terraform -ItemType "Directory" -Force ; `
