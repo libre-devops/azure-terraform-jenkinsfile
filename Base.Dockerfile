@@ -49,6 +49,10 @@ RUN pip3 install terraform-compliance checkov azure-cli && \
 
 RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
 
+USER root
+
+RUN chown -R ${NORMAL_USER} $(brew --prefix)/*
+
 USER ${NORMAL_USER}
 
 RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
