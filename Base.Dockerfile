@@ -1,13 +1,13 @@
-#Use supplier image
-FROM docker.io/ubuntu:focal
+FROM jenkins/jenkins:latest
 
-LABEL org.opencontainers.image.source=https://github.com/libre-devops/azure-terraform-gh-action
+ENV NORMAL_USER jenkins
+
+USER root
+
+LABEL org.opencontainers.image.source=https://github.com/libre-devops/azure-terraform-jenkins-container
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
-
-#Declare user expectation, I am performing root actions, so use root.
-USER root
 
 #Install needed packages as well as setup python with args and pip
 RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y \
@@ -43,6 +43,13 @@ RUN brew install tfsec python3 tfenv tree
 RUN pip3 install terraform-compliance checkov && \
     tfenv install latest
 
-USER root 
+USER ${NORMAL_USER}
 
-WORKDIR /
+ENV PATH="/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/var/jenkins_home/.local/bin:${PATH}"
+
+RUN  pip3 install checkov && \
+            pip3 install --upgrade checkov && \
+                pip3 install azure-cli && \
+                pip3 install --upgrade azure-cli && \
+                    pip3 install terraform-compliance && \
+                    pip3 install --upgrade terraform-compliance

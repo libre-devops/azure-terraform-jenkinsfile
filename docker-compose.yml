@@ -3,6 +3,6 @@ services:
 
   tf-gh-action:
     build: .
-    image: "ghcr.io/libre-devops/azure-terraform-gh-action-base:latest"
-    container_name: "tf-gh-action"
+    image: "ghcr.io/libre-devops/azure-terraform-jenkinsfile:latest"
+    container_name: "tf-jenkins"
     restart: unless-stopped
