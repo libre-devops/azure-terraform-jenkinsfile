@@ -29,7 +29,7 @@ RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y \
                 chown -R linuxbrew: /home/linuxbrew/.linuxbrew
 
 #Set User Path with expected paths for new packages
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/usr/local/go:/usr/local/go/dev/bin:/usr/local/bin/python3:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.local/bin:${PATH}"
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/usr/local/go:/usr/local/go/dev/bin:/usr/local/bin/python3:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.local/bin:/var/jenkins_home:${PATH}"
 RUN echo $PATH | tee /etc/environment
 
 USER linuxbrew
@@ -40,16 +40,7 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 RUN brew install tfsec python3 tfenv tree
-RUN pip3 install terraform-compliance checkov && \
+RUN pip3 install terraform-compliance checkov azure-cli && \
     tfenv install latest
 
 USER ${NORMAL_USER}
-
-ENV PATH="/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/var/jenkins_home/.local/bin:${PATH}"
-
-RUN  pip3 install checkov && \
-            pip3 install --upgrade checkov && \
-                pip3 install azure-cli && \
-                pip3 install --upgrade azure-cli && \
-                    pip3 install terraform-compliance && \
-                    pip3 install --upgrade terraform-compliance
