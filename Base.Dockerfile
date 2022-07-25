@@ -4,7 +4,7 @@ ENV NORMAL_USER jenkins
 
 USER root
 
-LABEL org.opencontainers.image.source=https://github.com/libre-devops/azure-terraform-jenkins-container
+LABEL org.opencontainers.image.source=https://github.com/libre-devops/azure-terraform-jenkinsfile
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
