@@ -55,8 +55,4 @@ RUN chown -R ${NORMAL_USER} $(brew --prefix)/*
 
 USER ${NORMAL_USER}
 
-RUN jenkins-plugin-cli \
-    git \
-    xterm
-
 RUN echo 'alias powershell="pwsh"' >> ~/.bashrc
